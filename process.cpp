@@ -1,6 +1,8 @@
-
 #include "allFunctions.h"
+
 extern pid_t pid;
+
+// Forks and executes an external command with optional background execution
 void startProcess(vector<string> &args)
 {
     if (args.empty())

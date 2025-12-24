@@ -1,8 +1,8 @@
-
 #include "allFunctions.h"
 
 pid_t pid = -1;
 
+// Handles SIGINT signal by forwarding it to the foreground child process
 void sigintHandler(int sig)
 {
     if (pid > 0)
@@ -11,6 +11,7 @@ void sigintHandler(int sig)
     }
 }
 
+// Handles SIGTSTP signal by forwarding it to the foreground child process
 void sigtstpHandler(int sig)
 {
     if (pid > 0)
@@ -19,15 +20,16 @@ void sigtstpHandler(int sig)
     }
 }
 
+// Sets up signal handlers for SIGINT and SIGTSTP
 void setupSignals()
 {
     signal(SIGINT, sigintHandler);
     signal(SIGTSTP, sigtstpHandler);
 }
 
+// Main entry point that initializes the shell and runs the command loop
 int main()
 {
-
     char start[4096];
     if (!getcwd(start, sizeof(start)))
     {
@@ -47,6 +49,7 @@ int main()
 
     initHistory();
     setupSignals();
+    setupAutocomplete();
 
     while (true)
     {
@@ -59,7 +62,7 @@ int main()
         char *in = readline(prompt.c_str());
         if (!in)
         {
-            cout << "\n";
+            cout << "\nlogout\n";
             break;
         }
 

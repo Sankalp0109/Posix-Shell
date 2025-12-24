@@ -1,5 +1,6 @@
-
 #include "allFunctions.h"
+
+// Converts file mode bits to a permission string like "-rwxr-xr-x"
 string permissions(mode_t mode)
 {
     string permission;
@@ -16,6 +17,7 @@ string permissions(mode_t mode)
     return permission;
 }
 
+// Prints file information in long format (permissions, links, owner, size, date, name)
 void print_long(const string &path, const string &name)
 {
     struct stat st{};
@@ -27,7 +29,6 @@ void print_long(const string &path, const string &name)
     }
 
     cout << permissions(st.st_mode) << " ";
-
     cout << setw(2) << st.st_nlink << " ";
 
     struct passwd *pw = getpwuid(st.st_uid);
@@ -45,6 +46,7 @@ void print_long(const string &path, const string &name)
     cout << name << endl;
 }
 
+// Lists all entries in a directory with optional flags for hidden files and long format
 void printFolderData(const string &path, bool show_all, bool long_format)
 {
     DIR *dir = opendir(path.c_str());
@@ -79,6 +81,7 @@ void printFolderData(const string &path, bool show_all, bool long_format)
     }
 }
 
+// Prints information for a single file
 void printFileData(const string &path, bool long_format)
 {
     struct stat st{};
@@ -98,6 +101,8 @@ void printFileData(const string &path, bool long_format)
         cout << name << endl;
     }
 }
+
+// Main ls command handler supporting -a, -l flags and multiple paths
 int listFile(const vector<string> &args, string &homeDir)
 {
     bool showAll = false, longFormat = false;

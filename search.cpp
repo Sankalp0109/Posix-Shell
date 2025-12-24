@@ -1,5 +1,6 @@
-
 #include "allFunctions.h"
+
+// Recursively searches for a file or directory with the given name
 bool recursiveSearch(const string &path, const string &target)
 {
     DIR *dir = opendir(path.c_str());
@@ -36,6 +37,7 @@ bool recursiveSearch(const string &path, const string &target)
     return false;
 }
 
+// Searches for a file in the current directory tree and prints True/False
 void runSearch(const vector<string> &args)
 {
     if (args.size() != 2)

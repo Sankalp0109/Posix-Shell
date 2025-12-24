@@ -1,6 +1,6 @@
-
 #include "allFunctions.h"
 
+// Replaces home directory path with ~ for display purposes
 string tildeDisplay(const string &path, const string &homeDir)
 {
     if (path == homeDir)
@@ -10,6 +10,7 @@ string tildeDisplay(const string &path, const string &homeDir)
     return path;
 }
 
+// Expands ~ to the home directory path
 string tildeExpand(const string &arg, const string &homeDir)
 {
     if (arg == "~")
@@ -19,6 +20,7 @@ string tildeExpand(const string &arg, const string &homeDir)
     return arg;
 }
 
+// Tokenizes a command string handling quotes, pipes, and redirections
 vector<string> tokenize(const string &command)
 {
     vector<string> tokens;
@@ -93,6 +95,8 @@ vector<string> tokenize(const string &command)
 
     return tokens;
 }
+
+// Splits input by semicolons into separate commands
 vector<string> semicolonSplit(const string &input)
 {
     vector<string> commands;

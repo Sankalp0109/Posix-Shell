@@ -1,6 +1,6 @@
-
-
 #include "allFunctions.h"
+
+// Processes and applies input/output redirections (<, >, >>) from the command
 void handleRedirections(vector<string> &cmd)
 {
     for (int i = 0; i < cmd.size();)

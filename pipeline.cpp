@@ -1,17 +1,25 @@
-
 #include "allFunctions.h"
-bool isBuiltin(vector<string> commands)
-{
-    string cmd = commands[0];
 
-    return (cmd == "echo" || cmd == "cd" || cmd == "pwd" || cmd == "ls" || cmd == "history" || cmd == "pinfo" || cmd == "search" || (commands.size() >= 2 && commands[1] == "&"));
+// Checks if command must run in parent process (modifies shell state)
+bool isParentBuiltin(const string &cmd)
+{
+    return (cmd == "cd" || cmd == "exit");
 }
+
+// Checks if command can run in child process (only produces output)
+bool isChildBuiltin(const string &cmd)
+{
+    return (cmd == "echo" || cmd == "pwd" || cmd == "ls" || 
+            cmd == "history" || cmd == "pinfo" || cmd == "search");
+}
+
+// Splits command tokens by pipe symbols into separate commands
 vector<vector<string>> splitPipeline(const vector<string> &tokens)
 {
     vector<vector<string>> commands;
     vector<string> current;
 
-    for (auto &t : tokens)
+    for (const auto &t : tokens)
     {
         if (t == "|")
         {
@@ -32,19 +40,15 @@ vector<vector<string>> splitPipeline(const vector<string> &tokens)
     return commands;
 }
 
+// Executes a builtin command based on its name
 void runBuiltin(vector<string> &cmd, string &homeDir)
 {
-
     if (cmd.empty())
         return;
 
     if (cmd[0] == "echo")
     {
         printEcho(cmd);
-    }
-    else if (cmd[0] == "cd")
-    {
-        printCd(cmd, homeDir);
     }
     else if (cmd[0] == "ls")
     {
@@ -73,40 +77,75 @@ void runBuiltin(vector<string> &cmd, string &homeDir)
             printHistory(10);
         }
     }
-    else if (cmd.size() >= 2 && cmd[1] == "&")
-    {
-        startProcess(cmd);
-    }
 }
 
+// Executes a pipeline of commands with proper pipe and fork handling
 void executePipeline(const vector<string> &tokens, string &homeDir)
 {
     vector<vector<string>> commands = splitPipeline(tokens);
-    int n = commands.size();
+    size_t n = commands.size();
 
-    vector<int> pfd(2);
+    if (n == 0 || commands[0].empty())
+        return;
+
+    if (n == 1)
+    {
+        const string &cmd = commands[0][0];
+        
+        if (cmd == "cd")
+        {
+            printCd(commands[0], homeDir);
+            return;
+        }
+        
+        if (commands[0].size() >= 2 && commands[0].back() == "&")
+        {
+            startProcess(commands[0]);
+            return;
+        }
+        
+        if (isChildBuiltin(cmd))
+        {
+            int savedStdin = dup(STDIN_FILENO);
+            int savedStdout = dup(STDOUT_FILENO);
+            
+            handleRedirections(commands[0]);
+            runBuiltin(commands[0], homeDir);
+            
+            dup2(savedStdin, STDIN_FILENO);
+            dup2(savedStdout, STDOUT_FILENO);
+            close(savedStdin);
+            close(savedStdout);
+            return;
+        }
+    }
+
+    vector<pid_t> pids(n);
     int prev_fd = -1;
 
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
     {
+        int pfd[2] = {-1, -1};
+        
         if (i < n - 1)
         {
-            if (pipe(pfd.data()) < 0)
+            if (pipe(pfd) < 0)
             {
                 perror("pipe");
+                return;
             }
         }
 
-        pid_t pid = fork();
-        if (pid == 0)
+        pids[i] = fork();
+        
+        if (pids[i] == 0)
         {
-
             if (prev_fd != -1)
             {
                 dup2(prev_fd, STDIN_FILENO);
                 close(prev_fd);
             }
-            if (i < n - 1)
+            if (pfd[1] != -1)
             {
                 close(pfd[0]);
                 dup2(pfd[1], STDOUT_FILENO);
@@ -115,40 +154,39 @@ void executePipeline(const vector<string> &tokens, string &homeDir)
 
             handleRedirections(commands[i]);
 
-            if (isBuiltin(commands[i]))
+            if (isChildBuiltin(commands[i][0]))
             {
                 runBuiltin(commands[i], homeDir);
-                exit(0);
+                _exit(0);
             }
 
             vector<char *> argv;
             for (auto &s : commands[i])
                 argv.push_back(const_cast<char *>(s.c_str()));
-            argv.push_back(NULL);
+            argv.push_back(nullptr);
 
-            if (execvp(argv[0], argv.data()) < 0)
-            {
-                perror("execvp failed");
-                exit(1);
-            }
+            execvp(argv[0], argv.data());
+            perror("execvp failed");
+            _exit(1);
         }
-        else if (pid > 0)
+        else if (pids[i] > 0)
         {
-
             if (prev_fd != -1)
                 close(prev_fd);
-            if (i < n - 1)
-            {
+            if (pfd[1] != -1)
                 close(pfd[1]);
-                prev_fd = pfd[0];
-            }
+            prev_fd = pfd[0];
         }
         else
         {
             perror("fork failed");
+            return;
         }
     }
 
-    for (int i = 0; i < n; i++)
-        wait(NULL);
+    for (size_t i = 0; i < n; i++)
+    {
+        int status;
+        waitpid(pids[i], &status, 0);
+    }
 }

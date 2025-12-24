@@ -4,7 +4,7 @@ CXXFLAGS = -Wall -Wextra -std=c++17 -MMD -MP
 
 TARGET = main
 
-SRCS = main.cpp utils.cpp pipeline.cpp cd.cpp echo.cpp redirection.cpp ls.cpp history.cpp pinfo.cpp process.cpp search.cpp pwd.cpp
+SRCS = main.cpp utils.cpp pipeline.cpp cd.cpp echo.cpp redirection.cpp ls.cpp history.cpp pinfo.cpp process.cpp search.cpp pwd.cpp autocomplete.cpp
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(OBJS:.o=.d)
 

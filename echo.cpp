@@ -1,8 +1,8 @@
-
 #include "allFunctions.h"
+
+// Prints the given arguments to stdout with redirection support
 void printEcho(vector<string> cmd)
 {
-
     int savedStdout = dup(STDOUT_FILENO);
 
     handleRedirections(cmd);
